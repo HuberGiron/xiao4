@@ -1,12 +1,21 @@
 from fastapi import FastAPI, UploadFile, WebSocket
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import shutil
 import os
 
 app = FastAPI()
 
-# Asegura carpeta para imágenes
+# Habilitar CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://hubergiron.mx"],  # o ["*"] para pruebas
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 os.makedirs("static", exist_ok=True)
 
 @app.post("/upload")
