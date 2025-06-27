@@ -1,34 +1,38 @@
-from fastapi import FastAPI, UploadFile, WebSocket
+from fastapi import FastAPI, Request, WebSocket
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-import shutil
 import os
 
 app = FastAPI()
 
-# Habilitar CORS
+# ✅ Habilitar carpeta de imágenes
+os.makedirs("static", exist_ok=True)
+
+# ✅ Habilitar CORS para tu frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://hubergiron.mx"],  # o ["*"] para pruebas
+    allow_origins=["https://hubergiron.mx"],  # Cambia esto si necesitas otros orígenes
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-os.makedirs("static", exist_ok=True)
-
+# ✅ Endpoint optimizado para subir imagen JPEG directa (sin multipart)
 @app.post("/upload")
-async def upload_image(file: UploadFile):
+async def upload_image(request: Request):
+    image_data = await request.body()
     with open("static/latest.jpg", "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        buffer.write(image_data)
     return {"status": "ok"}
 
+# ✅ Servir la última imagen
 @app.get("/latest.jpg")
 def get_image():
-    return FileResponse("static/latest.jpg")
+    return FileResponse("static/latest.jpg", headers={"Cache-Control": "no-store"})
 
-@app.websocket("/ws")  # (Opcional si algún cliente desea usar WebSocket)
+# ✅ WebSocket opcional
+@app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
@@ -41,4 +45,5 @@ async def websocket_endpoint(websocket: WebSocket):
     finally:
         await websocket.close()
 
+# ✅ Servir archivos estáticos (como /static/latest.jpg si lo deseas)
 app.mount("/static", StaticFiles(directory="static"), name="static")
